@@ -1,39 +1,76 @@
-import { WebSocketServer ,WebSocket} from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 
-
-const wss = new WebSocketServer({port:8080});
+const wss = new WebSocketServer({ port: 8080 });
 
 interface User {
   socket: WebSocket;
-  room: string
+  room: string;
 }
 
+let allsockets: User[] = [];
 
-let allsockets:User[] = [];
-wss.on("connection",(socket)=>{
-
-socket.on("message",(message)=>{
-  const parsedMessage = JSON.parse(message as unknown as string);
-  if(parsedMessage.type=="join"){
-
-    allsockets.push({
-      socket,
-      room:parsedMessage.payload.roomId
-    })
-    console.log("user joined the room");
+function broadcastRoomCount(roomId: string) {
+  const count = allsockets.filter((u) => u.room === roomId).length;
+  for (const u of allsockets) {
+    if (u.room === roomId) {
+      u.socket.send(
+        JSON.stringify({
+          type: "count",
+          payload: { count },
+        })
+      );
+    }
   }
-  if(parsedMessage.type=="chat"){
-     let currentUserRoom = null;
-     for(let i = 0 ; i < allsockets.length;i++){
-      if(allsockets[i].socket == socket){
-        currentUserRoom=allsockets[i].room;
+}
+
+wss.on("connection", (socket) => {
+  socket.on("message", (message) => {
+    const parsedMessage = JSON.parse(message as unknown as string);
+
+    if (parsedMessage.type === "join") {
+      allsockets.push({ socket, room: parsedMessage.payload.roomId });
+      console.log("user joined the room", parsedMessage.payload.roomId);
+
+      socket.send(
+        JSON.stringify({
+          type: "system",
+          payload: { message: `✅ Joined room ${parsedMessage.payload.roomId}` },
+        })
+      );
+
+      broadcastRoomCount(parsedMessage.payload.roomId);
+    }
+
+    if (parsedMessage.type === "chat") {
+      let currentUserRoom = null;
+      for (const u of allsockets) {
+        if (u.socket === socket) {
+          currentUserRoom = u.room;
+        }
       }
-     }
-     for(let i = 0 ; i < allsockets.length;i++){
-      if(allsockets[i].room == currentUserRoom){
-        allsockets[i].socket.send(parsedMessage.payload.message)
+      if (!currentUserRoom) return;
+
+      for (const u of allsockets) {
+        if (u.room === currentUserRoom) {
+          u.socket.send(
+            JSON.stringify({
+              type: "chat",
+              payload: {
+                message: parsedMessage.payload.message,
+                clientId: parsedMessage.payload.clientId,
+              },
+            })
+          );
+        }
       }
-     }
-  }
-})
-}) 
+    }
+  });
+
+  socket.on("close", () => {
+    const user = allsockets.find((u) => u.socket === socket);
+    if (user) {
+      allsockets = allsockets.filter((u) => u.socket !== socket);
+      broadcastRoomCount(user.room);
+    }
+  });
+});
