@@ -22,7 +22,7 @@ export default function Room() {
   }, [chat]);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8080");
+    const socket = new WebSocket("https://websockets-chat-app-pkkf.onrender.com/");
 
     socket.onmessage = (event) => {
       try {
