@@ -1,9 +1,10 @@
 "use client";
 import { Spotlight } from "@/components/ui/spotlight";
 import { cn } from "@/lib/utils";
-
+import { RainbowButton} from "@/components/magicui/rainbow-button";
+import { useRouter } from "next/navigation";
 export default function Home() {
-
+const router = useRouter();
   return (
 <>
  <div className="relative flex  w-full overflow-hidden rounded-md bg-black/[0.96] antialiased md:items-center md:justify-center h-screen">
@@ -25,8 +26,11 @@ export default function Home() {
         <p className="mx-auto mt-4 max-w-lg text-center text-base font-normal text-neutral-300">
          EchoRooms is a chat platform where people can create and join virtual rooms to connect, share, and collaborate in real time. Each room acts like a unique space—whether it for casual conversations, brainstorming with a team, or hosting community discussions.
         </p>
-     
+     <div className="m-4 flex justify-center mt-5">
+       <RainbowButton onClick={()=>router.push("/chatroom")}>Tap to Vibe more </RainbowButton> 
+     </div>
       </div>
+    
     </div>
 </> 
   );
